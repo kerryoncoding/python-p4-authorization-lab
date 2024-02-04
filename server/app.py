@@ -18,7 +18,6 @@ db.init_app(app)
 
 api = Api(app)
 
-
 # If a user is not signed in, the get() methods in each view should return a status code of 401 unauthorized, along with an error message.
 @app.before_request
 def check_if_logged_in():
@@ -30,88 +29,62 @@ def check_if_logged_in():
         'logout',
         'check_session'
     ]
-
     if (request.endpoint) not in access_list and (not session.get ('user_id')):
         return {'error':'Unauthorized'}, 401
 
-
 class ClearSession(Resource):
-
     def delete(self):
-    
         session['page_views'] = None
         session['user_id'] = None
-
         return {}, 204
 
 class IndexArticle(Resource):
-    
     def get(self):
         articles = [article.to_dict() for article in Article.query.all()]
         return make_response(jsonify(articles), 200)
 
 class ShowArticle(Resource):
-
     def get(self, id):
-
         article = Article.query.filter(Article.id == id).first()
         article_json = article.to_dict()
-
         if not session.get('user_id'):
             session['page_views'] = 0 if not session.get('page_views') else session.get('page_views')
             session['page_views'] += 1
-
             if session['page_views'] <= 3:
                 return article_json, 200
-
             return {'message': 'Maximum pageview limit reached'}, 401
-
         return article_json, 200
 
 class Login(Resource):
-
-    def post(self):
-        
+    def post(self): 
         username = request.get_json().get('username')
         user = User.query.filter(User.username == username).first()
-
         if user:
-        
             session['user_id'] = user.id
             return user.to_dict(), 200
-
         return {}, 401
 
 class Logout(Resource):
-
     def delete(self):
-
         session['user_id'] = None
-        
         return {}, 204
 
 class CheckSession(Resource):
-
-    def get(self):
-        
+    def get(self): 
         user_id = session['user_id']
         if user_id:
             user = User.query.filter(User.id == user_id).first()
             return user.to_dict(), 200
-        
         return {}, 401
 
 # If the user is signed in, the get() methods in each view should return the JSON data for the members-only articles and the members-only article by ID, respectively.
 
 class MemberOnlyIndex(Resource):
-    
-    def get(self):
-           
+    def get(self):  
         articles = Article.query.filter(Article.is_member_only == True).all()
         return [article.to_dict() for article in articles], 200
 
 class MemberOnlyArticle(Resource):
-    
     def get(self, id):
         article = Article.query.filter(Article.id == id).first()
         return article.to_dict(), 200
@@ -124,7 +97,6 @@ api.add_resource(Logout, '/logout', endpoint='logout')
 api.add_resource(CheckSession, '/check_session', endpoint='check_session')
 api.add_resource(MemberOnlyIndex, '/members_only_articles', endpoint='member_index')
 api.add_resource(MemberOnlyArticle, '/members_only_articles/<int:id>', endpoint='member_article')
-
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
